@@ -70,6 +70,8 @@ def train(NB_EPOCHS=2):
 
     # CNN model instantiation
     net = Net()
+    net.to(device)
+
     summary(net, input_size=(3, 32, 32))
 
     # Define a Loss function
@@ -112,6 +114,8 @@ def train(NB_EPOCHS=2):
 def evaluate():
     # Load the model
     net = Net()
+    net.to(device)
+
     net.load_state_dict(torch.load(MODEL_PATH, weights_only=True))
 
     # Test the network on test data
@@ -125,7 +129,7 @@ def evaluate():
 
             # to GPU
             if device != 'cpu':
-                inputs, labels = inputs.to(device), labels.to(device)
+                images, labels = images.to(device), labels.to(device)
 
             # calculate outputs by running images through the network
             outputs = net(images)
@@ -138,7 +142,8 @@ def evaluate():
 
 
 batch_size = 4
-MODEL_PATH = './models/cifar_net.pth'
+MODEL_PATH = '/mnt/home/hasanka/projects/dl-models-public/models/cifar_net.pth'
+DATA_PATH = '/mnt/home/hasanka/projects/dl-models-public/data'
 
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -148,11 +153,11 @@ print("Using {} device".format(device))
 transform = transforms.Compose(
     [transforms.ToTensor(),
      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
+trainset = torchvision.datasets.CIFAR10(root=DATA_PATH, train=True,
                                         download=True, transform=transform)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
                                           shuffle=True, num_workers=2)
-testset = torchvision.datasets.CIFAR10(root='./data', train=False,
+testset = torchvision.datasets.CIFAR10(root=DATA_PATH, train=False,
                                        download=True, transform=transform)
 testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
                                          shuffle=False, num_workers=2)
