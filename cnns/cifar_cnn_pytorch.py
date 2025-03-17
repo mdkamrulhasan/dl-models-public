@@ -2,19 +2,9 @@ import torch
 import torchvision
 import torchvision.transforms as transforms
 import torch.nn as nn
-from torchsummary import summary
 import torch.optim as optim
-from scipy.stats import loguniform
-from ray.tune.schedulers import ASHAScheduler
-from functools import partial
-import pickle
-from pathlib import Path
-from ray.train import Checkpoint, get_checkpoint
-from ray import train
-from ray import tune
-import tempfile
-import copy
-from models import Net
+
+from models import MyVanillaCNNNet as Net
 
 
 def accuracy(model, data_loader):
@@ -132,5 +122,5 @@ if __name__ == '__main__':
     # model training
     training()
     # model evaluation on the test set
-    evaluate(estimate_training_accuracy=True)
+    evaluate(estimate_training_accuracy=False)
 

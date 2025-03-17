@@ -13,11 +13,11 @@ from ray import train
 from ray import tune
 import tempfile
 import copy
-from models import Net
+from models import MyVanillaCNNNet as Net
 import os
 
 
-def training_hpo(config, data_dir=None, n_epoch=2):
+def training_hpo(config, n_epoch=2):
     """helper function for hyperparamter optimization."""
 
     # Splitting training data into training and validation sets
@@ -33,7 +33,7 @@ def training_hpo(config, data_dir=None, n_epoch=2):
                                               shuffle=True, num_workers=2)
 
     # CNN model instantiation
-    net = Net()
+    net = Net(k1=config["k1"])
     net.to(device)
 
     # Define a Loss function
@@ -122,6 +122,7 @@ def optimize_hyperparams():
     hp_config = {
         # "h1": tune.choice([2 ** i for i in np.arange(4, 9)]),
         # "h2": tune.choice([2 ** i for i in np.arange(4, 9)]),
+        "k1": tune.choice([5]),
         "lr": loguniform.rvs(1e-4, 1e-1),
         "batch_size": tune.choice([8, 16, 24])
     }
