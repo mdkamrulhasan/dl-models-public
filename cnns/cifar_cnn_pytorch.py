@@ -2,14 +2,11 @@ import torch
 import torchvision
 import torchvision.transforms as transforms
 import torch.nn as nn
-import torch.nn.functional as F
 from torchsummary import summary
 import torch.optim as optim
-
 from scipy.stats import loguniform
 from ray.tune.schedulers import ASHAScheduler
 from functools import partial
-
 import pickle
 from pathlib import Path
 from ray.train import Checkpoint, get_checkpoint
@@ -17,28 +14,25 @@ from ray import train
 from ray import tune
 import tempfile
 import copy
-
 from models import Net
 
 
-
 def evaluate():
-    # Load the model
+    """model evaluation on the test set."""
+
+    # Load previously trained model
     net = Net()
     net.to(device)
-
     net.load_state_dict(torch.load(MODEL_PATH, weights_only=True))
 
-    # Test the network on test data
-
+    # Evaluate on test data
     correct = 0
     total = 0
     # since we're not training, we don't need to calculate the gradients for our outputs
     with torch.no_grad():
         for data in testloader:
             images, labels = data
-
-            # to GPU
+            # cpu vs gpu
             if device != 'cpu':
                 images, labels = images.to(device), labels.to(device)
 
@@ -48,30 +42,27 @@ def evaluate():
             _, predicted = torch.max(outputs, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
-
     print(f'Accuracy of the network on the 10000 test images: {100 * correct // total} %')
 
-def train(n_epoch=2):
+
+def training(n_epoch=2, learning_rate=0.001, momentum=0.9):
+    """Training a CNN model."""
 
     # CNN model instantiation
     net = Net()
     net.to(device)
-
-    summary(net, input_size=(3, 32, 32))
-
-    # Define a Loss function
+    # Loss function
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+    # Optimizer
+    optimizer = optim.SGD(net.parameters(), lr=learning_rate, momentum=momentum)
 
     # Model/network training
-    for epoch in range(n_epoch):  # loop over the dataset multiple times
-
+    for epoch in range(n_epoch):
         running_loss = 0.0
         for i, data in enumerate(trainloader, 0):
             # get the inputs; data is a list of [inputs, labels]
             inputs, labels = data
-
-            # to GPU
+            # cpu vs gpu
             if device != 'cpu':
                 inputs, labels = inputs.to(device), labels.to(device)
             # zero the parameter gradients
@@ -81,19 +72,17 @@ def train(n_epoch=2):
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
-            # print statistics
             running_loss += loss.item()
-            if i % 2000 == 1999:  # print every 2000 mini-batches
+            # print statistics (every 2000 mini-batches)
+            if i % 2000 == 1999:
                 print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 2000:.3f}')
                 running_loss = 0.0
-
-    print('Finished Training')
-
     # Save the model for future reference
     torch.save(net.state_dict(), MODEL_PATH)
+    print('Finished Training')
+
 
 def train_HPO(config, data_dir=None, n_epoch=2):
-
     # splitting training into training and validation sets
     VALID_RATIO = 0.2
     vaildationset = copy.deepcopy(trainset)
@@ -104,7 +93,6 @@ def train_HPO(config, data_dir=None, n_epoch=2):
                                               shuffle=True, num_workers=2)
     validloader = torch.utils.data.DataLoader(vaildationset, batch_size=batch_size,
                                               shuffle=True, num_workers=2)
-
 
     # CNN model instantiation
     net = Net()
@@ -117,10 +105,7 @@ def train_HPO(config, data_dir=None, n_epoch=2):
 
     optimizer = optim.SGD(net.parameters(), lr=config["lr"], momentum=0.9)
 
-
-
     # Checkpoint related
-
 
     checkpoint_dir = '/Users/kamrulhasan/projects/dl-models-public/models'
 
@@ -135,7 +120,6 @@ def train_HPO(config, data_dir=None, n_epoch=2):
             optimizer.load_state_dict(checkpoint_state["optimizer_state_dict"])
     else:
         start_epoch = 0
-
 
     train_loss = []
 
@@ -161,8 +145,7 @@ def train_HPO(config, data_dir=None, n_epoch=2):
                 print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 2000:.3f}')
                 running_loss = 0.0
         # logging training loss (KH)
-        train_loss.append(loss.item()) ## may be running_loss more appropriate??
-
+        train_loss.append(loss.item())  ## may be running_loss more appropriate??
 
     ## On validation data
     # Validation loss
@@ -205,16 +188,10 @@ def train_HPO(config, data_dir=None, n_epoch=2):
     print('Finished Training')
 
     # Save the model for future reference
-    #torch.save(net.state_dict(), MODEL_PATH)
-
-
-
-
+    # torch.save(net.state_dict(), MODEL_PATH)
 
 
 def HPO():
-
-
     max_num_epochs = 10
     data_dir = '/Users/kamrulhasan/projects/dl-models-public/data'
     num_samples = 10  # 50
@@ -227,8 +204,6 @@ def HPO():
         # "batch_size": tune.choice([2, 4, 8, 16])
         # "batch_size": tune.choice([8, 16, 24])
     }
-
-
 
     scheduler = ASHAScheduler(
         metric="loss",
@@ -257,13 +232,17 @@ def HPO():
     # best_trained_model = ChurnModel(n_input_dim, n_output)(best_trial.config["l1"], best_trial.config["l2"])
 
 
+RUN_LOCALLY = True
+BATCH_SIZE = 4
 
-
-batch_size = 4
-# MODEL_PATH = '/mnt/home/hasanka/projects/dl-models-public/models/cifar_net.pth'
-# DATA_PATH = '/mnt/home/hasanka/projects/dl-models-public/data'
-MODEL_PATH = '/Users/kamrulhasan/projects/dl-models-public/models/cifar_net.pth'
-DATA_PATH = '/Users/kamrulhasan/projects/dl-models-public/data'
+if RUN_LOCALLY:
+    # Your local machine paths
+    MODEL_PATH = '/Users/kamrulhasan/projects/dl-models-public/models/cifar_net.pth'
+    DATA_PATH = '/Users/kamrulhasan/projects/dl-models-public/data'
+else:
+    # Your server paths
+    MODEL_PATH = '/mnt/home/hasanka/projects/dl-models-public/models/cifar_net.pth'
+    DATA_PATH = '/mnt/home/hasanka/projects/dl-models-public/data'
 
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -275,22 +254,18 @@ transform = transforms.Compose(
      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 trainset = torchvision.datasets.CIFAR10(root=DATA_PATH, train=True,
                                         download=True, transform=transform)
-
 # trainset.data = trainset.data[:200] # a small chunk of data
 
-trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+trainloader = torch.utils.data.DataLoader(trainset, batch_size=BATCH_SIZE,
                                           shuffle=True, num_workers=2)
 testset = torchvision.datasets.CIFAR10(root=DATA_PATH, train=False,
                                        download=True, transform=transform)
-testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+testloader = torch.utils.data.DataLoader(testset, batch_size=BATCH_SIZE,
                                          shuffle=False, num_workers=2)
-classes = ('plane', 'car', 'bird', 'cat',
-           'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
 if __name__ == '__main__':
     # model training
-    train()
+    training()
     # model evaluation on the test set
     evaluate()
     # HPO()
-
