@@ -88,7 +88,7 @@ def training(n_epoch=2, learning_rate=0.001, momentum=0.9):
 
 
 
-RUN_LOCALLY = True
+RUN_LOCALLY = False
 BATCH_SIZE = 4
 
 if RUN_LOCALLY:
