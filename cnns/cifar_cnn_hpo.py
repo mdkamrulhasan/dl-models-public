@@ -153,7 +153,7 @@ def optimize_hyperparams():
         pickle.dump(best_trial, f)
 
 
-RUN_LOCALLY = True
+RUN_LOCALLY = False
 # Data sample size for Hyperparamter optimization
 HP_TRAINING_DATA_SAMPLE_SIZE = 200
 BATCH_SIZE = 4
