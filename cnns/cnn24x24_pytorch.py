@@ -152,8 +152,6 @@ create_directory(DATA_PATH)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print("Using {} device".format(device))
 
-# base_path = '/content/drive/MyDrive/data/fall-2025-ass3'
-
 # Training data
 with open(os.path.join(DATA_PATH, 'train_X_y.pkl'), 'rb') as f:
     X_train, y_train = pickle.load(f)
@@ -170,8 +168,6 @@ X_test = np.transpose(X_test.astype(int), (0, 3, 1, 2))
 transform = transforms.Compose(
     [transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
-# batch_size = 4
-
 train_dataset = NumpyDataset(X_train, y_train.flatten(), transform=transform)
 trainloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 
@@ -186,7 +182,6 @@ if __name__ == '__main__':
     test_output_labels = evaluate(estimate_training_accuracy=True)
 
     # Pack results in a pandas dataframe
-
     test_predictions = pd.DataFrame({
         'rowId': range(0, len(test_output_labels)),
         'label': test_output_labels})
