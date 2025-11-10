@@ -36,6 +36,20 @@ class NumpyDataset(Dataset):
         return x, y
 
 
+def create_directory(path):
+    """
+    Creates a directory if it does not already exist.
+    Displays an appropriate message on success or error.
+    """
+    try:
+        os.makedirs(path, exist_ok=True)
+        print(f"Directory '{path}' created successfully (or already exists).")
+    except PermissionError:
+        print(f"Error: Permission denied while creating '{path}'.")
+    except OSError as e:
+        print(f"Error: Failed to create directory '{path}'. {e}")
+
+
 def accuracy(model, data_loader):
     """Accuracy estimation."""
 
@@ -68,7 +82,7 @@ def evaluate(estimate_training_accuracy=False):
     # Load previously trained model
     net = Net()
     net.to(device)
-    net.load_state_dict(torch.load(MODEL_PATH, weights_only=True))
+    net.load_state_dict(torch.load(os.path.join(MODEL_PATH, '24x24_challange_net.pth'), weights_only=True))
 
     if estimate_training_accuracy:
         # Evaluate on training data
@@ -115,21 +129,24 @@ def training(n_epoch=2, learning_rate=0.001, momentum=0.9):
                 print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 2000:.3f}')
                 running_loss = 0.0
     # Save the model for future reference
-    torch.save(net.state_dict(), MODEL_PATH)
+    torch.save(net.state_dict(), os.path.join(MODEL_PATH, '24x24_challange_net.pth'))
     print('Finished Training')
 
 
 RUN_LOCALLY = True
-BATCH_SIZE = 4
+BATCH_SIZE = 20
 
 if RUN_LOCALLY:
     # Your local machine paths
-    MODEL_PATH = '/Users/hasanka/projects/dl-models-public/models/24x24_challange_net.pth'
-    DATA_PATH = '/Users/hasanka/projects/dl-models-public/data/24x24-challange'
+    MODEL_PATH = '/Users/hasanka/projects/dl-models-public/models'
+    DATA_PATH = '/Users/hasanka/projects/dl-models-public/data/24x24-challenge'
 else:
     # Your server paths
-    MODEL_PATH = '/mnt/home/hasanka/projects/dl-models-public/models/24x24_challange_net.pth'
-    DATA_PATH = '/mnt/home/hasanka/projects/dl-models-public/data/24x24-challange'
+    MODEL_PATH = '/mnt/home/hasanka/projects/dl-models-public/models'
+    DATA_PATH = '/mnt/home/hasanka/projects/dl-models-public/data/24x24-challenge'
+
+create_directory(MODEL_PATH)
+create_directory(DATA_PATH)
 
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
